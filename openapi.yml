@@ -1,0 +1,462 @@
+openapi: 3.1.0
+info:
+  version: '1.0.0'
+  title: 'Mi Condominio API'
+  description: 'API para gestión de datos de condominio usando Amazon Athena'
+  contact:
+    name: 'Mi Condominio Team'
+    email: 'contact@micondominio.com'
+servers:
+  - url: 'https://6ppkh3flmf.execute-api.us-east-1.amazonaws.com/dev'
+tags:
+  - name: 'Cuotas'
+    description: 'Operaciones relacionadas con cuotas'
+  - name: 'Gastos'
+    description: 'Operaciones relacionadas con gastos'
+  - name: 'Presupuesto'
+    description: 'Operaciones relacionadas con presupuesto'
+  - name: 'Deudores'
+    description: 'Operaciones relacionadas con deudores'
+paths:
+  /cuotas:
+    get:
+      summary: 'Obtener cuotas'
+      description: 'Obtiene una lista de cuotas, opcionalmente filtrada por departamento.'
+      tags:
+        - 'Cuotas'
+      parameters:
+        - name: 'id_departamento'
+          in: query
+          description: 'ID del departamento para filtrar las cuotas.'
+          required: false
+          schema:
+            type: 'string'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuotasResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /cuotas/pagadas/total:
+    get:
+      summary: 'Obtener total de cuotas pagadas'
+      description: 'Obtiene el monto total de cuotas pagadas, opcionalmente filtrado por periodo'
+      tags:
+        - 'Cuotas'
+      parameters:
+        - name: 'periodo'
+          in: query
+          description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+          required: false
+          schema:
+            type: 'string'
+            pattern: '^\d{4}-\d{2}$'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotalCuotasPagadasResponse'
+        '400':
+          description: 'Error de solicitud'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /cuotas/vencidas/total:
+    get:
+      summary: 'Obtener total de cuotas vencidas'
+      description: 'Obtiene el monto total de cuotas vencidas (no pagadas y con fecha de vencimiento pasada), opcionalmente filtrado por periodo'
+      tags:
+        - 'Cuotas'
+      parameters:
+        - name: 'periodo'
+          in: query
+          description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+          required: false
+          schema:
+            type: 'string'
+            pattern: '^\d{4}-\d{2}$'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotalCuotasVencidasResponse'
+        '400':
+          description: 'Error de solicitud'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gastos:
+    get:
+      summary: 'Obtener gastos por período'
+      description: 'Obtiene una lista de todos los gastos para un período específico.'
+      tags:
+        - 'Gastos'
+      parameters:
+        - name: 'periodo'
+          in: query
+          description: 'Período en formato YYYY-MM para filtrar los gastos.'
+          required: true
+          schema:
+            type: 'string'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GastosResponse'
+        '400':
+          description: 'Error de solicitud'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gastos/total:
+    get:
+      summary: 'Obtener total de gastos'
+      description: 'Obtiene el total de gastos, opcionalmente filtrado por periodo'
+      tags:
+        - 'Gastos'
+      parameters:
+        - name: 'periodo'
+          in: query
+          description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+          required: false
+          schema:
+            type: 'string'
+            pattern: '^\d{4}-\d{2}$'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotalGastosResponse'
+        '400':
+          description: 'Error de solicitud'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gastos/categorias:
+    get:
+      summary: 'Obtener lista de gastos por categoría'
+      description: 'Obtiene una lista detallada de gastos agrupados por categoría para un período específico.'
+      tags:
+        - 'Gastos'
+      parameters:
+        - name: 'periodo'
+          in: query
+          description: 'Período en formato YYYY-MM para filtrar los gastos.'
+          required: true
+          schema:
+            type: 'string'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaGastoCategoriaResponse'
+        '400':
+          description: 'Error de solicitud'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presupuesto:
+    get:
+      summary: 'Obtener presupuesto'
+      description: 'Obtiene información del presupuesto desde la base de datos usando Amazon Athena'
+      tags:
+        - 'Presupuesto'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresupuestoResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presupuesto-vs-gasto:
+    get:
+      summary: "Obtener comparación de presupuesto vs gasto"
+      description: "Devuelve una comparación del presupuesto versus el gasto por categoría para un periodo específico."
+      tags:
+        - 'Presupuesto'
+      parameters:
+        - name: "periodo"
+          in: query
+          description: "Periodo a consultar (formato YYYY-MM)"
+          required: true
+          schema:
+            type: 'string'
+            pattern: '^\d{4}-\d{2}$'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresupuestoResponse'
+        '400':
+          description: 'Error de solicitud'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /deudores:
+    get:
+      summary: 'Obtener lista de deudores'
+      description: 'Obtiene la lista de deudores con el monto total adeudado por departamento y el nombre del responsable, opcionalmente filtrado por periodo'
+      tags:
+        - 'Deudores'
+      parameters:
+        - name: 'periodo'
+          in: query
+          description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+          required: false
+          schema:
+            type: 'string'
+            pattern: '^\d{4}-\d{2}$'
+      responses:
+        '200':
+          description: 'Respuesta exitosa'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeudoresResponse'
+        '400':
+          description: 'Error de solicitud'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 'Error del servidor'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        error:
+          type: 'string'
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    CuotasResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        totalRows:
+          type: 'integer'
+        cuotas:
+          type: 'array'
+          items:
+            type: 'object'
+            properties:
+              id:
+                type: 'string'
+              id_departamento:
+                type: 'string'
+              monto:
+                type: 'number'
+              periodo:
+                type: 'string'
+              estado:
+                type: 'string'
+              fecha_vencimiento:
+                type: 'string'
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    TotalGastosResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        totalGastos:
+          type: 'number'
+        periodo:
+          type: 'string'
+          nullable: true
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    TotalCuotasPagadasResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        montoAcumulado:
+          type: 'number'
+        periodo:
+          type: 'string'
+          nullable: true
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    TotalCuotasVencidasResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        montoAcumulado:
+          type: 'number'
+        periodo:
+          type: 'string'
+          nullable: true
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    DeudoresResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        totalDeudores:
+          type: 'integer'
+        deudores:
+          type: 'array'
+          items:
+            type: 'object'
+            properties:
+              idDepartamento:
+                type: 'string'
+              totalMonto:
+                type: 'number'
+              nombreResponsable:
+                type: 'string'
+        periodo:
+          type: 'string'
+          nullable: true
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    PresupuestoResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        totalRows:
+          type: 'integer'
+        presupuesto:
+          type: 'array'
+          items:
+            type: 'object'
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    ListaGastoCategoriaResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        totalRows:
+          type: 'integer'
+        periodo:
+          type: 'string'
+        data:
+          type: 'array'
+          items:
+            type: 'object'
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    GastosResponse:
+      type: 'object'
+      properties:
+        success:
+          type: 'boolean'
+        message:
+          type: 'string'
+        totalRows:
+          type: 'integer'
+        periodo:
+          type: 'string'
+        data:
+          type: 'array'
+          items:
+            type: 'object'
+        timestamp:
+          type: 'string'
+          format: 'date-time'
+    HtmlResponse:
+      type: 'string'

@@ -1,0 +1,36 @@
+{
+  "name": "mi-condominio-api",
+  "version": "1.0.0",
+  "description": "API de gestión de condominio con AWS Lambda y Serverless Framework",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "deploy:prod": "serverless deploy --stage prod",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f",
+    "invoke": "serverless invoke -f",
+    "offline": "serverless offline",
+    "docs:generate": "serverless openapi generate",
+    "docs:serve": "serverless openapi serve",
+    "docs:postman": "serverless openapi postman"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "lambda",
+    "api",
+    "condominio"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-offline": "^13.3.3",
+    "serverless-openapi-documentation": "^0.4.0"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1574.0",
+    "js-yaml": "^4.1.0"
+  }
+}

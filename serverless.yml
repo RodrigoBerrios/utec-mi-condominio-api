@@ -1,0 +1,684 @@
+service: g2-mi-condominio-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+  environment:
+    NODE_ENV: ${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "arn:aws:logs:*:*:*"
+        - Effect: Allow
+          Action:
+            - athena:StartQueryExecution
+            - athena:GetQueryExecution
+            - athena:GetQueryResults
+            - athena:GetWorkGroup
+            - athena:ListWorkGroups
+            - athena:ListDataCatalogs
+            - athena:ListDatabases
+            - athena:ListTables
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - glue:GetDatabase
+            - glue:GetTable
+            - glue:GetPartitions
+            - glue:GetPartition
+            - glue:BatchGetPartition
+            - glue:GetTables
+            - glue:GetDatabases
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - s3:GetBucketLocation
+            - s3:GetObject
+            - s3:ListBucket
+            - s3:PutObject
+            - s3:DeleteObject
+          Resource: 
+            - "arn:aws:s3:::g2-mi-condominio-athenas"
+            - "arn:aws:s3:::g2-mi-condominio-athenas/*"
+            - "arn:aws:s3:::stage-apartments-management-dev-654654589924"
+            - "arn:aws:s3:::stage-apartments-management-dev-654654589924/*"
+            - "arn:aws:s3:::product-apartments-management-dev-654654589924"
+            - "arn:aws:s3:::product-apartments-management-dev-654654589924/*"
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-openapi-documentation
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+  athena:
+    database: 'micondominio_lakehouse_db'
+    workgroup: 'primary'
+    outputLocation: 's3://g2-mi-condominio-athenas/temp-sql/'
+  documentation:
+    api:
+      info:
+        version: '1.0.0'
+        title: 'Mi Condominio API'
+        description: 'API para gestión de datos de condominio usando Amazon Athena'
+        contact:
+          name: 'Mi Condominio Team'
+          email: 'contact@micondominio.com'
+      servers:
+        - url: 'https://api.micondominio.com/{stage}'
+          description: 'Servidor de producción'
+          variables:
+            stage:
+              default: 'dev'
+              enum:
+                - dev
+                - prod
+      tags:
+        - name: 'Cuotas'
+          description: 'Operaciones relacionadas con cuotas'
+        - name: 'Gastos'
+          description: 'Operaciones relacionadas con gastos'
+        - name: 'Presupuesto'
+          description: 'Operaciones relacionadas con presupuesto'
+        - name: 'Deudores'
+          description: 'Operaciones relacionadas con deudores'
+    models:
+      - name: 'ErrorResponse'
+        description: 'Respuesta de error estándar'
+        contentType: 'application/json'
+        schema:
+          type: 'object'
+          properties:
+            success:
+              type: 'boolean'
+              example: false
+            message:
+              type: 'string'
+              example: 'Error al procesar la solicitud'
+            error:
+              type: 'string'
+              example: 'Detalles del error'
+            timestamp:
+              type: 'string'
+              format: 'date-time'
+              example: '2025-01-27T10:30:00.000Z'
+          required:
+            - success
+            - message
+            - timestamp
+      - name: 'CuotasResponse'
+        description: 'Respuesta para obtener cuotas'
+        contentType: 'application/json'
+        schema:
+          type: 'object'
+          properties:
+            success:
+              type: 'boolean'
+              example: true
+            message:
+              type: 'string'
+              example: 'Cuotas obtenidas exitosamente'
+            totalRows:
+              type: 'integer'
+              example: 10
+            cuotas:
+              type: 'array'
+              items:
+                type: 'object'
+                properties:
+                  id:
+                    type: 'string'
+                  id_departamento:
+                    type: 'string'
+                  monto:
+                    type: 'number'
+                  periodo:
+                    type: 'string'
+                  estado:
+                    type: 'string'
+                  fecha_vencimiento:
+                    type: 'string'
+            timestamp:
+              type: 'string'
+              format: 'date-time'
+          required:
+            - success
+            - message
+            - totalRows
+            - cuotas
+            - timestamp
+      - name: 'TotalGastosResponse'
+        description: 'Respuesta para total de gastos'
+        contentType: 'application/json'
+        schema:
+          type: 'object'
+          properties:
+            success:
+              type: 'boolean'
+              example: true
+            message:
+              type: 'string'
+              example: 'Total de gastos obtenido exitosamente'
+            totalGastos:
+              type: 'number'
+              example: 15000.50
+            periodo:
+              type: 'string'
+              example: '2025-01'
+              nullable: true
+            timestamp:
+              type: 'string'
+              format: 'date-time'
+          required:
+            - success
+            - message
+            - totalGastos
+            - periodo
+            - timestamp
+      - name: 'TotalCuotasPagadasResponse'
+        description: 'Respuesta para total de cuotas pagadas'
+        contentType: 'application/json'
+        schema:
+          type: 'object'
+          properties:
+            success:
+              type: 'boolean'
+              example: true
+            message:
+              type: 'string'
+              example: 'Total de cuotas pagadas obtenido exitosamente'
+            montoAcumulado:
+              type: 'number'
+              example: 25000.75
+            periodo:
+              type: 'string'
+              example: '2025-01'
+              nullable: true
+            timestamp:
+              type: 'string'
+              format: 'date-time'
+          required:
+            - success
+            - message
+            - montoAcumulado
+            - periodo
+            - timestamp
+      - name: 'TotalCuotasVencidasResponse'
+        description: 'Respuesta para total de cuotas vencidas'
+        contentType: 'application/json'
+        schema:
+          type: 'object'
+          properties:
+            success:
+              type: 'boolean'
+              example: true
+            message:
+              type: 'string'
+              example: 'Total de cuotas vencidas obtenido exitosamente'
+            montoAcumulado:
+              type: 'number'
+              example: 5000.25
+            periodo:
+              type: 'string'
+              example: '2025-01'
+              nullable: true
+            timestamp:
+              type: 'string'
+              format: 'date-time'
+          required:
+            - success
+            - message
+            - montoAcumulado
+            - periodo
+            - timestamp
+      - name: 'DeudoresResponse'
+        description: 'Respuesta para lista de deudores'
+        contentType: 'application/json'
+        schema:
+          type: 'object'
+          properties:
+            success:
+              type: 'boolean'
+              example: true
+            message:
+              type: 'string'
+              example: 'Lista de deudores obtenida exitosamente'
+            totalDeudores:
+              type: 'integer'
+              example: 3
+            deudores:
+              type: 'array'
+              items:
+                type: 'object'
+                properties:
+                  idDepartamento:
+                    type: 'string'
+                    example: '101'
+                  totalMonto:
+                    type: 'number'
+                    example: 1500.50
+                  nombreResponsable:
+                    type: 'string'
+                    example: 'Juan Pérez'
+                required:
+                  - idDepartamento
+                  - totalMonto
+                  - nombreResponsable
+            periodo:
+              type: 'string'
+              example: '2025-01'
+              nullable: true
+            timestamp:
+              type: 'string'
+              format: 'date-time'
+          required:
+            - success
+            - message
+            - totalDeudores
+            - deudores
+            - periodo
+            - timestamp
+      - name: 'PresupuestoResponse'
+        description: 'Respuesta para obtener presupuesto'
+        contentType: 'application/json'
+        schema:
+          type: 'object'
+          properties:
+            success:
+              type: 'boolean'
+              example: true
+            message:
+              type: 'string'
+              example: 'Presupuesto obtenido exitosamente'
+            totalRows:
+              type: 'integer'
+              example: 5
+            presupuesto:
+              type: 'array'
+              items:
+                type: 'object'
+            timestamp:
+              type: 'string'
+              format: 'date-time'
+          required:
+            - success
+            - message
+            - totalRows
+            - presupuesto
+            - timestamp
+      - name: 'ListaGastoCategoriaResponse'
+        description: 'Respuesta para la lista de gastos por categoría'
+        contentType: 'application/json'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+            totalRows:
+              type: integer
+            periodo:
+              type: string
+            data:
+              type: array
+              items:
+                type: object
+            timestamp:
+              type: string
+              format: 'date-time'
+      - name: 'GastosResponse'
+        description: 'Respuesta para la lista de gastos'
+        contentType: 'application/json'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+            totalRows:
+              type: integer
+            periodo:
+              type: string
+            data:
+              type: array
+              items:
+                type: object
+            timestamp:
+              type: string
+              format: 'date-time'
+      - name: 'HtmlResponse'
+        description: 'Respuesta HTML para la documentación'
+        contentType: 'text/html'
+        schema:
+          type: 'string'
+
+functions:
+  getPresupuesto:
+    handler: src/functions/getPresupuesto.handler
+    events:
+      - http:
+          path: /presupuesto
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener presupuesto'
+            description: 'Obtiene información del presupuesto desde la base de datos usando Amazon Athena'
+            tags:
+              - 'Presupuesto'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'PresupuestoResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getPresupuesto
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getTotalGastos:
+    handler: src/functions/getTotalGastos.handler
+    events:
+      - http:
+          path: /gastos/total
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener total de gastos'
+            description: 'Obtiene el total de gastos, opcionalmente filtrado por periodo'
+            tags:
+              - 'Gastos'
+            queryParams:
+              - name: 'periodo'
+                description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+                type: 'string'
+                pattern: '^\d{4}-\d{2}$'
+                required: false
+                example: '2025-01'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'TotalGastosResponse'
+              - statusCode: '400'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getTotalGastos
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getTotalCuotasPagadas:
+    handler: src/functions/getTotalCuotasPagadas.handler
+    events:
+      - http:
+          path: /cuotas/pagadas/total
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener total de cuotas pagadas'
+            description: 'Obtiene el monto total de cuotas pagadas, opcionalmente filtrado por periodo'
+            tags:
+              - 'Cuotas'
+            queryParams:
+              - name: 'periodo'
+                description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+                type: 'string'
+                pattern: '^\d{4}-\d{2}$'
+                required: false
+                example: '2025-01'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'TotalCuotasPagadasResponse'
+              - statusCode: '400'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getTotalCuotasPagadas
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getTotalCuotasVencidas:
+    handler: src/functions/getTotalCuotasVencidas.handler
+    events:
+      - http:
+          path: /cuotas/vencidas/total
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener total de cuotas vencidas'
+            description: 'Obtiene el monto total de cuotas vencidas (no pagadas y con fecha de vencimiento pasada), opcionalmente filtrado por periodo'
+            tags:
+              - 'Cuotas'
+            queryParams:
+              - name: 'periodo'
+                description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+                type: 'string'
+                pattern: '^\d{4}-\d{2}$'
+                required: false
+                example: '2025-01'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'TotalCuotasVencidasResponse'
+              - statusCode: '400'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getTotalCuotasVencidas
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getDeudores:
+    handler: src/functions/getDeudores.handler
+    events:
+      - http:
+          path: /deudores
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener lista de deudores'
+            description: 'Obtiene la lista de deudores con el monto total adeudado por departamento y el nombre del responsable, opcionalmente filtrado por periodo'
+            tags:
+              - 'Deudores'
+            queryParams:
+              - name: 'periodo'
+                description: 'Periodo en formato YYYY-MM (ejemplo: 2025-01)'
+                type: 'string'
+                pattern: '^\d{4}-\d{2}$'
+                required: false
+                example: '2025-01'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'DeudoresResponse'
+              - statusCode: '400'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getDeudores
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getCuotas:
+    handler: src/functions/getCuotas.handler
+    events:
+      - http:
+          path: /cuotas
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener cuotas'
+            description: 'Obtiene una lista de cuotas, opcionalmente filtrada por departamento.'
+            tags:
+              - 'Cuotas'
+            queryParams:
+              - name: 'id_departamento'
+                description: 'ID del departamento para filtrar las cuotas.'
+                required: false
+                type: 'string'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'CuotasResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getCuotas
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getGastos:
+    handler: src/functions/getGastos.handler
+    events:
+      - http:
+          path: /gastos
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener gastos por período'
+            description: 'Obtiene una lista de todos los gastos para un período específico.'
+            tags:
+              - 'Gastos'
+            queryParams:
+              - name: 'periodo'
+                description: 'Período en formato YYYY-MM para filtrar los gastos.'
+                required: true
+                type: 'string'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'GastosResponse'
+              - statusCode: '400'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getGastos
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getListaGastoCategoria:
+    handler: src/functions/getListaGastoCategoria.handler
+    events:
+      - http:
+          path: /gastos/categorias
+          method: get
+          cors: true
+          documentation:
+            summary: 'Obtener lista de gastos por categoría'
+            description: 'Obtiene una lista detallada de gastos agrupados por categoría para un período específico.'
+            tags:
+              - 'Gastos'
+            queryParams:
+              - name: 'periodo'
+                description: 'Período en formato YYYY-MM para filtrar los gastos.'
+                required: true
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'ListaGastoCategoriaResponse'
+              - statusCode: '400'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getListaGastoCategoria
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getPresupuestoVsGasto:
+    handler: src/functions/getPresupuestoVsGasto.handler
+    events:
+      - http:
+          path: /presupuesto-vs-gasto
+          method: get
+          cors: true
+          documentation:
+            summary: "Obtener comparación de presupuesto vs gasto"
+            description: "Devuelve una comparación del presupuesto versus el gasto por categoría para un periodo específico."
+            tags:
+              - 'Presupuesto'
+            queryParams:
+              - name: "periodo"
+                description: "Periodo a consultar (formato YYYY-MM)"
+                required: true
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'application/json': 'PresupuestoResponse' 
+              - statusCode: '400'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+    environment:
+      FUNCTION_NAME: getPresupuestoVsGasto
+      ATHENA_DATABASE: micondominio_lakehouse_db
+      ATHENA_WORKGROUP: primary
+      ATHENA_OUTPUT_LOCATION: s3://g2-mi-condominio-athenas/temp-sql/
+
+  getDocs:
+    handler: src/functions/getDocs.handler
+    events:
+      - http:
+          path: /docs
+          method: get
+          cors: true
+          documentation:
+            summary: 'Documentación de la API'
+            description: 'Muestra la documentación interactiva de la API usando Swagger UI'
+            tags:
+              - 'Documentación'
+            methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  'text/html': 'HtmlResponse'
+              - statusCode: '500'
+                responseModels:
+                  'application/json': 'ErrorResponse'
+
+# resources:
+#   Resources:
+#     # Aquí puedes agregar recursos adicionales como DynamoDB, S3, etc. 
