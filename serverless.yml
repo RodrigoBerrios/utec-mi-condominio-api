@@ -2,6 +2,11 @@ service: g2-mi-condominio-api
 
 frameworkVersion: '3'
 
+package:
+  individually: true
+  exclude:
+    - '**/*'
+
 provider:
   name: aws
   runtime: nodejs18.x
@@ -369,6 +374,12 @@ custom:
 functions:
   getPresupuesto:
     handler: src/functions/getPresupuesto.handler
+    package:
+      include:
+        - src/functions/getPresupuesto.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /presupuesto
@@ -394,6 +405,12 @@ functions:
 
   getTotalGastos:
     handler: src/functions/getTotalGastos.handler
+    package:
+      include:
+        - src/functions/getTotalGastos.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /gastos/total
@@ -429,6 +446,12 @@ functions:
 
   getTotalCuotasPagadas:
     handler: src/functions/getTotalCuotasPagadas.handler
+    package:
+      include:
+        - src/functions/getTotalCuotasPagadas.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /cuotas/pagadas/total
@@ -464,6 +487,12 @@ functions:
 
   getTotalCuotasVencidas:
     handler: src/functions/getTotalCuotasVencidas.handler
+    package:
+      include:
+        - src/functions/getTotalCuotasVencidas.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /cuotas/vencidas/total
@@ -499,6 +528,12 @@ functions:
 
   getDeudores:
     handler: src/functions/getDeudores.handler
+    package:
+      include:
+        - src/functions/getDeudores.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /deudores
@@ -534,6 +569,12 @@ functions:
 
   getCuotas:
     handler: src/functions/getCuotas.handler
+    package:
+      include:
+        - src/functions/getCuotas.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /cuotas
@@ -564,6 +605,12 @@ functions:
 
   getGastos:
     handler: src/functions/getGastos.handler
+    package:
+      include:
+        - src/functions/getGastos.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /gastos
@@ -597,6 +644,12 @@ functions:
 
   getListaGastoCategoria:
     handler: src/functions/getListaGastoCategoria.handler
+    package:
+      include:
+        - src/functions/getListaGastoCategoria.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /gastos/categorias
@@ -629,6 +682,12 @@ functions:
 
   getPresupuestoVsGasto:
     handler: src/functions/getPresupuestoVsGasto.handler
+    package:
+      include:
+        - src/functions/getPresupuestoVsGasto.js
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /presupuesto-vs-gasto
@@ -661,6 +720,13 @@ functions:
 
   getDocs:
     handler: src/functions/getDocs.handler
+    package:
+      include:
+        - src/functions/getDocs.js
+        - openapi.yml
+        - node_modules/**
+        - package.json
+        - package-lock.json
     events:
       - http:
           path: /docs
