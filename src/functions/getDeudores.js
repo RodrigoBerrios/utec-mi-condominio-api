@@ -208,18 +208,7 @@ const formatResults = (results) => {
 
 // Función para construir la query dinámicamente
 const buildQuery = (periodo) => {
-  let query = `SELECT
-    cu.id_departamento,
-    SUM(cu.monto) AS total_monto,
-    COALESCE(COALESCE(inq.nombre, pro.nombre), '-') AS nombre_responsable
-  FROM
-    micondominio_lakehouse_db.g2_cuotas_tb cu
-  LEFT JOIN
-    micondominio_lakehouse_db.g2_inquilinos_tb inq
-      ON cu.id_departamento = inq.id_departamento
-  LEFT JOIN
-    micondominio_lakehouse_db.g2_propietarios_tb pro
-      ON cu.id_departamento = pro.id_departamento and pro.fecha_fin is not null`;
+  let query = `SELECT * FROM micondominio_lakehouse_db.g2_deudores`;
 
   if (periodo) {
     // Validar formato de periodo (YYYY-MM)
@@ -229,15 +218,8 @@ const buildQuery = (periodo) => {
         "Formato de periodo inválido. Use YYYY-MM (ejemplo: 2025-01)"
       );
     }
-    query += `
-  WHERE
-    cu.periodo = '${periodo}'`;
+    query += ` WHERE periodo = '${periodo}'`;
   }
-
-  query += `
-  GROUP BY
-    cu.id_departamento,
-    COALESCE(inq.nombre, pro.nombre)`;
 
   return query;
 };

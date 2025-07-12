@@ -213,8 +213,7 @@ const buildQuery = (periodo) => {
   FROM
     micondominio_lakehouse_db.g2_cuotas_tb
   WHERE
-    CAST(fecha_vencimiento AS date) < current_date
-    AND estado <> 'Pagada'`;
+    estado <> 'Pagada'`;
 
   if (periodo) {
     // Validar formato de periodo (YYYY-MM)
